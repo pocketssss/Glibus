@@ -168,24 +168,36 @@ function GetTable()
 	return new_events
 end
 
-function Call(event_name, gm, ...)
+function Call(event_name, gm, max_return_values, ...)
 	local event = events[event_name]
 	if event then
 		local i, n = 2, event.n
+		local results = {}
+		local num_results = 0
 		::loop::
 		local func = event[i]
 		if func then
 			local a, b, c, d, e, f = func(...)
 			if a ~= nil then
-				return a, b, c, d, e, f
+				num_results = num_results + 1
+				results[num_results] = a
+				if num_results == max_return_values then
+					return unpack(results, 1, max_return_values)
+				end
 			end
 		end
 		i = i + 4
 		if i <= n then
 			goto loop
 		end
+		if num_results > 0 then
+			return unpack(results, 1, num_results)
+		end
 	end
 
+	--
+	-- Call the gamemode function
+	--
 	if not gm then return end
 
 	local GamemodeFunction = gm[event_name]

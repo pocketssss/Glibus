@@ -1,5 +1,6 @@
 local function LibsInit()
 	local files = {
+		"libs/hook.lua",
 		"libs/math.lua",
 		"libs/table.lua",
 		"libs/vector.lua"

@@ -1,95 +1,90 @@
---Some constants
-local doublepi, halfpi, pi = 	math.pi * 2, 
-								math.pi * 0.5,
-								math.pi
---Calculating degrees and radians with easier way
+-- Some constants
+local doublepi, halfpi, pi = math.pi * 2, math.pi * 0.5, math.pi
+
+-- Cached math functions
+local floor = math.floor
+local sqrt = math.sqrt
+
+-- Cached table functions
+local tableSort = table.sort
+
+-- Cached random function
+local sharedRandom = math.SharedRandom
+
+-- Precomputed coefficients for sine approximation
+local a = -0.255
+local b = 1.27323954
+local c = 0.405284735
+
+-- Precompute the values for sin and cos
+local sinValues = {}
+local cosValues = {}
+local sinfValues = {}
+local cosfValues = {}
+
+for i = 0, 360 do
+  sinValues[i] = math.sin(i)
+  cosValues[i] = math.cos(i)
+  sinfValues[i] = math.sinf(i)
+  cosfValues[i] = math.cosf(i)
+end
+
+-- Optimized functions
 
 function math.rad(n)
-	return	 (n % 360) * 0.0174533
+  return n * pi / 180
 end
 
 function math.deg(n)
-	return	 (n % doublepi) / 0.0174533
+  return n * 180 / pi
 end
 
---Some common math functions optimisation.
-
-function math.min( ... )	 -- No conditions. Should be faster.
-	local t = {...}
-	local n = t[1]
-
-	for i = 2, #t do
-		local v = t[i]
-		n = n > v and v or n
-	end
-
-	return n
+function math.min(...)
+  local t = {...}
+  tableSort(t)
+  return t[1]
 end
 
-function math.max( ... )	 -- Same.
-	local t = {...}
-	local n = t[1]
-
-	for i = 2, #t do
-		local v = t[i]
-		n = n > v and n or v
-	end
-
-	return n
+function math.max(...)
+  local t = {...}
+  tableSort(t, function(a, b) return a > b end)
+  return t[1]
 end
-
---Warmup jit BC
-local min, max, floor, ceil, round, abs = math.min, math.max, math.floor, math.ceil, math.Round, math.abs
 
 function math.SharedRandom(l, h)
-	local l, h = l or 0, h or l or 0xFFFFFF
-	local d = h - l
-	local x = (CurTime() * 3212377613) % d
-	return floor(x + l)
+  l = l or 0
+  h = h or l or 0xFFFFFF
+  return floor(sharedRandom() * (h - l + 1) + l)
 end
 
-function math.Clamp(n, l, h) 	-- Warmed jit bc. Faster than C++ library.
-	return	 min(max(n, l), h)
+function math.Clamp(n, l, h)
+  return n < l and l or (n > h and h or n)
 end
 
-function math.sqrt(n) 			-- Same.
-	return	 n ^ 0.5
+local a, b, c = -0.166667, 0.00833, -0.000198
+
+function math.sin_cos(n)
+    n = n % doublepi
+    if n < -pi then
+        n = n + doublepi
+    elseif n > pi then
+        n = n - doublepi
+    end
+
+    local x2 = n * n
+    local sin = n * (1 + x2 * (a + x2 * b))
+    local cos = 1 + x2 * (a + x2 * c)
+
+    return sin, cos
 end
---Sine Cos optimisation by quadratic curve. Lua adaptation of http://www.mclimatiano.com/faster-sine-approximation-using-quadratic-curve/.
 
 function math.sin(n)
-	local n = n % doublepi
-
-	if n < -pi then
-		n = n + doublepi
-	elseif n > pi then
-		n = n - doublepi
-	end
-
-	local out = 0
-	if n < 0 then
-		out = n * (1.27323954 + 0.405284735 * n)
-
-		if out < 0 then
-			out = out * (-0.255 * (out + 1) + 1)
-		else
-			out = out * (0.255 * (out - 1) + 1)
-		end
-	else
-		out = n * (1.27323954 - 0.405284735 * n)
- 
-		if out < 0 then
-			out = out * (-0.255 * (out + 1) + 1)
-		else
-			out = out * (0.255 * (out - 1) + 1)
-		end
-	end
- 
-	return out
+    return math.sin_cos(n)
 end
 
 function math.cos(n)
-	return math.sin(n + halfpi)
+    _, cos = math.sin_cos(n)
+    return cos
 end
 
 --Same, but not so accurate.

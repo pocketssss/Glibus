@@ -70,7 +70,7 @@ local function copy_event(event, event_name)
         end
     end
 end 
-
+-- add hook
 function Add(event_name, name, func, priority)
     if not isstring(event_name) or not isfunction(func) or not name then return end
     

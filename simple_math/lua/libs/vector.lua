@@ -1,30 +1,27 @@
 local vec = FindMetaTable("Vector")
 
 local min, max = math.min, math.max
-local sqrt = math.sqrt
 
 function vec:Length()
 	local x, y, z = self.x, self.y, self.z
-	return sqrt(x * x + y * y + z * z)
+	return (x * x + y * y + z * z) ^ .5 -- No needed to call a function
 end
 
 function vec:Distance(pos)
 	local v = self - pos
 	local x, y, z = v.x, v.y, v.z
-	return sqrt(x * x + y * y + z * z)
+	return (x * x + y * y + z * z) ^ .5 -- BRUH
 end
 
 function vec.Normalize(v)
-	local l = v:Length()
-	v.x = v.x / l
-	v.y = v.y / l
-	v.z = v.z / l
+	local l = 1 / v:Length() -- Fighting for the zeptosecond!
+	v.x, v.y, v.z = v.x * l, v.y * l, v.z * l
 end
 
 function vec:GetNormalized()
-	local l = self:Length()
-	local x, y, z = self.x, self.y, self.z
-	return Vector(x, y, z) / l
+	local l = 1 / self:Length() -- YEAH
+	local x, y, z = self.x * l, self.y * l, self.z * l
+	return Vector(x, y, z) -- You should know that any mathematical operations on a vector create a copy of it
 end
 
 function vec.Dot(a, b)

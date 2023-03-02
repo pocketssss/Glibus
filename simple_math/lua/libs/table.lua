@@ -1,6 +1,7 @@
-local getkeys, rand = table.GetKeys, math.random		 -- Some warmup(???)
+local getkeys, rand, pairs =
+    table.GetKeys, math.random, pairs -- Some warmup(???)
 
-function table.Count(t)
+local function table_Count(t)
     local count = 0
     for _ in pairs(t) do count = count + 1 end
     return count
@@ -11,7 +12,7 @@ function table.Empty(t)
 end
 
 function table.Random(t)
-    local n = table.Count(t)
+    local n = table_Count(t)
     if n == 0 then return nil end
     local rand_index = rand(1, n)
     local i = 1
@@ -31,3 +32,5 @@ function table.GetWinningKey(t)
     end
     return max_key
 end
+
+table.Count = table_Count

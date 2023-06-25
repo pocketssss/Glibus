@@ -33,3 +33,30 @@ function NetMessage(name)
 
     return message
 end
+
+function CreateEmptyNetMessage(name)
+    local message = {
+        name = name
+    }
+
+    function message:Send(receiver)
+        net.Start(self.name)
+        net.Send(receiver)
+    end
+
+    return message
+end
+
+function ReadNetMessage()
+    local message = {
+        name = net.ReadString(),
+        data = {}
+    }
+
+    local numParams = net.ReadUInt(8)
+    for i = 1, numParams do
+        table.insert(message.data, net.ReadType())
+    end
+
+    return message
+end

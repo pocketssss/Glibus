@@ -4,7 +4,8 @@ local function LibsInit()
 		"libs/angle.lua",
 		"libs/math.lua",
 		"libs/table.lua",
-		"libs/vector.lua"
+		"libs/vector.lua",
+		"extentions/netmessage"
 	}
 
 	for i = 1, #files do

@@ -1,6 +1,6 @@
 local function OptimizeRendering()
-    render.PushFilterMag(TEXFILTER.ANISOTROPIC) 
-    render.PushFilterMin(TEXFILTER.ANISOTROPIC) 
+    render.PushFilterMag(16)
+    render.PushFilterMin(16)
 
     render.EnableClipping(true)
     render.SetBlend(0)
@@ -14,7 +14,5 @@ local function ResetRendering()
     render.SetBlend(1) 
 end
 
-hook.Add("Initialize", "OptimizeGame", OptimizeRendering)
 hook.Add("InitPostEntity", "OptimizeGame", OptimizeRendering)
 hook.Add("ShutDown", "ResetOptimizations", ResetRendering)
-hook.Add("PostCleanupMap", "ResetOptimizations", ResetRendering)

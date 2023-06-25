@@ -1,19 +1,12 @@
--- https://github.com/Srlion/Hook-Library/blob/master/hook.lua
--- I daresay my hooks might work better, but that's just a theory
--- If you can check it, check it
-
-
 local pairs = pairs
 local setmetatable = setmetatable
 local isstring = isstring
-local isnumber = isnumber
 local isfunction = isfunction
 local insert = table.insert
 local HOOK_MONITOR_HIGH = -2
 local HOOK_HIGH = -1
 local HOOK_NORMAL = 0
 local HOOK_LOW = 1
-local HOOK_MONITOR_LOW = 2
 local events = {}
 
 local function find_hook(event, name)
@@ -34,11 +27,9 @@ local function copy_event(event, event_name)
 
             local parent = events[event_name]
 
-            -- if hook got removed then don't run it
             local pos = find_hook(parent, name)
             if not pos then return end
 
-            -- if hook priority changed then it should be treated as a new hook, don't run it
             if parent[name][3] ~= new_event[key + 2] then return end
 
             return parent[name][1]
@@ -50,27 +41,29 @@ local function copy_event(event, event_name)
 
         local hook = {hook_func, hook_name, hook_priority}
 
-        if not event[hook_name] then
-            event[hook_name] = hook
+        local event_hooks = events[event_name]
+        if not event_hooks[hook_name] then
+            event_hooks[hook_name] = {}
+        end
+
+        local hooks = event_hooks[hook_name]
+        local pos = find_hook(hooks, hook_name)
+        if not pos then
+            insert(hooks, hook)
         else
-            local pos = find_hook(events[event_name], hook_name)
-            if not pos then
-                table.insert(events[event_name], hook)
-            else
-                table.insert(events[event_name], pos, hook)
-            end
+            insert(hooks, pos, hook)
         end
 
-        if hook_func ~= event[hook_name][1] then
-            table.sort(events[event_name], hook_sort)
+        if hook_func ~= hooks[pos][1] then
+            table.sort(hooks, hook_sort)
         end
 
-        if event[hook_name][1](...) ~= nil then
+        if hooks[pos][1](...) ~= nil then
             break
         end
     end
-end 
--- add hook
+end
+
 function Add(event_name, name, func, priority)
     if not isstring(event_name) or not isfunction(func) or not name then return end
     
@@ -93,21 +86,29 @@ function Add(event_name, name, func, priority)
         end
     end
     
-    local event = events[event_name] or {n = 0}
+    local event = events[event_name] or {}
+    events[event_name] = event
     
-    local pos = find_hook(event, name)
-    if pos and event[pos + 3] ~= priority then
+    local event_hooks = events[event_name]
+    local hooks = event_hooks[name]
+    if not hooks then
+        hooks = {}
+        event_hooks[name] = hooks
+    end
+    
+    local pos = find_hook(hooks, name)
+    if pos and hooks[pos + 3] ~= priority then
         Remove(event_name, name)
         pos = nil
     end
     
     if pos then
-        event[pos + 1] = func
-        event[pos + 2] = name
-        event[pos + 3] = priority
+        hooks[pos + 1] = func
+        hooks[pos + 2] = name
+        hooks[pos + 3] = priority
     else
         local event_pos = 4
-        for i = 4, event.n, 4 do
+        for i = 4, #event, 4 do
             local _priority = event[i]
             if priority < _priority then
                 event_pos = i
@@ -117,11 +118,10 @@ function Add(event_name, name, func, priority)
             event_pos = i + 4
         end
         
-        table.insert(event, event_pos, priority)
-        table.insert(event, event_pos, name)
-        table.insert(event, event_pos, func)
-        table.insert(event, event_pos, 1)
-        event.n = event.n + 4
+        insert(event, event_pos, priority)
+        insert(event, event_pos, name)
+        insert(event, event_pos, func)
+        insert(event, event_pos, 1)
     end
 end
 
@@ -131,10 +131,14 @@ function Remove(event_name, name)
     local event = events[event_name]
     if not event then return end
 
-    local pos = find_hook(event, name)
+    local event_hooks = events[event_name]
+    local hooks = event_hooks[name]
+    if not hooks then return end
+
+    local pos = find_hook(hooks, name)
     if not pos then return end
 
-    local n = event.n
+    local n = #event
     for i = pos, n - 4, 4 do
         event[i] = event[i + 4]
         event[i + 1] = event[i + 5]
@@ -146,67 +150,59 @@ function Remove(event_name, name)
     event[n - 1] = nil
     event[n - 2] = nil
     event[n - 3] = nil
-    event.n = n - 4
 
     events[event_name] = copy_event(event, event_name)
 end
 
 function GetTable()
-	local new_events = {}
+    local new_events = {}
 
-	-- preallocate hooks table with the expected number of items
-	for event_name, event in next, events, nil do
-		new_events[event_name] = {}
-		for i = 1, event.n, 4 do
-			local name = event[i]
-			if name then
-				new_events[event_name][name] = event[i + 2] --[[real_func]]
-			end
-		end
-	end
+    for event_name, event in pairs(events) do
+        new_events[event_name] = {}
+        for i = 1, #event, 4 do
+            local name = event[i]
+            if name then
+                new_events[event_name][name] = event[i + 2]
+            end
+        end
+    end
 
-	return new_events
+    return new_events
 end
 
 function Call(event_name, gm, max_return_values, ...)
-	local event = events[event_name]
-	if event then
-		local i, n = 2, event.n
-		local results = {}
-		local num_results = 0
-		::loop::
-		local func = event[i]
-		if func then
-			local a, b, c, d, e, f = func(...)
-			if a ~= nil then
-				num_results = num_results + 1
-				results[num_results] = a
-				if num_results == max_return_values then
-					return unpack(results, 1, max_return_values)
-				end
-			end
-		end
-		i = i + 4
-		if i <= n then
-			goto loop
-		end
-		if num_results > 0 then
-			return unpack(results, 1, num_results)
-		end
-	end
+    local event = events[event_name]
+    if event then
+        local i, n = 2, #event
+        local results = {}
+        local num_results = 0
+        repeat
+            local func = event[i]
+            if func then
+                local a, b, c, d, e, f = func(...)
+                if a ~= nil then
+                    num_results = num_results + 1
+                    results[num_results] = a
+                    if num_results == max_return_values then
+                        return unpack(results, 1, max_return_values)
+                    end
+                end
+            end
+            i = i + 4
+        until i > n
+        if num_results > 0 then
+            return unpack(results, 1, num_results)
+        end
+    end
 
-	--
-	-- Call the gamemode function
-	--
-	if not gm then return end
+    if not gm then return end
 
-	local GamemodeFunction = gm[event_name]
-	if not GamemodeFunction then return end
+    local GamemodeFunction = gm[event_name]
+    if not GamemodeFunction then return end
 
-	return GamemodeFunction(gm, ...)
+    return GamemodeFunction(gm, ...)
 end
 
 function Run(name, ...)
-	return Call(name, gmod and gmod.GetGamemode() or nil, ...)
+    return Call(name, gmod and gmod.GetGamemode() or nil, ...)
 end
-

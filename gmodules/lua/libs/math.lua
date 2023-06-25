@@ -30,7 +30,7 @@ function math.SharedRandom(l, h)
 end
 
 function math.Clamp(n, l, h)
-  return n < l and l or (n > h and h or n)
+  return min(max(n, l), h)
 end
 
 function math.sin_cos(n)

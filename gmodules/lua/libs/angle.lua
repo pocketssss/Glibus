@@ -6,7 +6,7 @@ function ang:Forward()
     local p = sin(pitch)
     local y = cos(pitch) * cos(yaw)
     local r = cos(pitch) * sin(yaw)
-    return Vector(y, r, p)
+    return Vector(y, r, p) -- x y z ???
 end
 
 function ang:Up()

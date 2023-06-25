@@ -1,12 +1,7 @@
--- Some constants
 local doublepi, halfpi, pi = math.pi * 2, math.pi * 0.5, math.pi
-
--- Precomputed coefficients for sine approximation
 local a = -0.255
 local b = 1.27323954
 local c = 0.405284735
-
--- Optimized functions
 
 function math.rad(n)
   return n * pi / 180
@@ -62,7 +57,6 @@ function math.cos(n)
     return cos
 end
 
---Same, but not so accurate.
 function math.sinf(n)
     local n = n % doublepi
 

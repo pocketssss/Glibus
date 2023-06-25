@@ -12,6 +12,7 @@ local function LibsInit()
 		"libs",
 		"extentions",
 		"modules"
+		--"other"
 	}
 
 	for _, folder in ipairs(folders) do

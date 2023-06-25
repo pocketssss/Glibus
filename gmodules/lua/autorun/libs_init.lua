@@ -1,20 +1,21 @@
-local function LibsInit()
-	local files = {
-		"libs/hook.lua",
-		"libs/angle.lua",
-		"libs/math.lua",
-		"libs/table.lua",
-		"libs/vector.lua",
-		"extentions/netmessage"
-	}
-
-	for i = 1, #files do
-		local filepath = files[i]
+local function AddFilesFromFolder(folder)
+	local files = file.Find(folder .. "/*.lua", "LUA")
+	for _, filename in ipairs(files) do
+		local filepath = folder .. "/" .. filename
 		AddCSLuaFile(filepath)
 		include(filepath)
 	end
+end
 
-	files = nil
+local function LibsInit()
+	local folders = {
+		"libs",
+		"extentions"
+	}
+
+	for _, folder in ipairs(folders) do
+		AddFilesFromFolder(folder)
+	end
 end
 
 hook.Add("PostGamemodeLoaded", "LibsInit", LibsInit)

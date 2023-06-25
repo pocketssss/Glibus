@@ -1,9 +1,10 @@
-#🚀 Extensive Optimization of **Garry's Mod**
+# 🚀 Extensive Optimization of **Garry's Mod**
 
 Just a little outline to help optimize the math in Lua, aiming for super fine-tuned performance! ⚡️ This collection of optimizations is designed to significantly speed up various codes in the popular game Garry's Mod.
 Contributors
 
 🔗 Hooks: [srlion](https://github.com/Srlion)
+
 🔢 Math: [scuroinside](https://github.com/scuroinside)
 
 

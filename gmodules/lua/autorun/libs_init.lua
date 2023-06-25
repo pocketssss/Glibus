@@ -10,7 +10,8 @@ end
 local function LibsInit()
 	local folders = {
 		"libs",
-		"extentions"
+		"extentions",
+		"modules"
 	}
 
 	for _, folder in ipairs(folders) do

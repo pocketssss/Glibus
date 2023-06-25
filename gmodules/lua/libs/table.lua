@@ -1,7 +1,6 @@
-local getkeys, rand, pairs =
-    table.GetKeys, math.random, pairs -- Some warmup(???)
+local getkeys, rand, pairs = table.GetKeys, math.random, pairs
 
-local function table.Count(t)
+function table.Count(t)
     local count = 0
     for _ in pairs(t) do
         count = count + 1

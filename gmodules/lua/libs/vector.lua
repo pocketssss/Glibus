@@ -1,24 +1,25 @@
 local vec = FindMetaTable("Vector")
 
 function vec:Length()
-    local squaredLength = self.x ^ 2 + self.y ^ 2 + self.z ^ 2
-    return math.sqrt(squaredLength)
+    local x, y, z = self.x, self.y, self.z
+	return (x * x + y * y + z * z) ^ .5
 end
 
 function vec:Distance(pos)
     local v = self - pos
-    local squaredDistance = v.x ^ 2 + v.y ^ 2 + v.z ^ 2
-    return math.sqrt(squaredDistance)
+    local x, y, z = v.x, v.y, v.z
+    return (x * x + y * y + z * z) ^ .5
 end
 
 function vec.Normalize(v)
-    local length = v:Length()
-    return Vector(v.x / length, v.y / length, v.z / length)
+    local l = 1 / v:Length()
+    v.x, v.y, v.z = v.x * l, v.y * l, v.z * l
 end
 
 function vec:GetNormalized()
-    local length = self:Length()
-    return Vector(self.x / length, self.y / length, self.z / length)
+	local l = 1 / self:Length() 
+	local x, y, z = self.x * l, self.y * l, self.z * l
+    return Vector(x, y, z)
 end
 
 function vec.Dot(a, b)

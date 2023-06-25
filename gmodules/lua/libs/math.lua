@@ -14,12 +14,6 @@ function math.deg(n)
   return n * 180 / pi
 end
 
-function math.min(...)
-  local t = {...}
-  table.sort(t)
-  return t[1]
-end
-
 local function max(max, ...)
   for i = 1, select('#', ...) do
       local v = select(i, ...)

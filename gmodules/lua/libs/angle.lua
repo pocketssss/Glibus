@@ -1,26 +1,32 @@
 local ang = FindMetaTable("Angle")
 local sin, cos, atan2 = math.sin, math.cos, math.atan2
 
+function ang:Setup()
+    self.sinPitch = sin(self.p)
+    self.cosPitch = cos(self.p)
+    self.cosYaw = cos(self.y)
+    self.sinYaw = sin(self.y)
+end
+
 function ang:Forward()
-    local pitch, yaw = self.p, self.y
-    local p = sin(pitch)
-    local y = cos(pitch) * cos(yaw)
-    local r = cos(pitch) * sin(yaw)
-    return Vector(y, r, p) -- x y z ???
+    local p = self.sinPitch
+    local y = self.cosPitch * self.cosYaw
+    local r = self.cosPitch * self.sinYaw
+    return Vector(y, r, p)
 end
 
 function ang:Up()
-    local pitch, yaw, roll = self.p, self.y, self.r
-    local p = -sin(pitch) * cos(roll)
-    local y = cos(pitch) * sin(roll) * cos(yaw) - sin(yaw) * sin(roll)
-    local r = cos(pitch) * cos(roll) * cos(yaw) + sin(yaw) * sin(roll)
+    local roll = self.r
+    local p = -self.sinPitch * cos(roll)
+    local y = self.cosPitch * sin(roll) * self.cosYaw - self.sinYaw * sin(roll)
+    local r = self.cosPitch * cos(roll) * self.cosYaw + self.sinYaw * sin(roll)
     return Vector(y, r, p)
 end
 
 function ang:Right()
-    local pitch, yaw, roll = self.p, self.y, self.r
-    local p = sin(pitch) * sin(roll)
-    local y = -cos(pitch) * sin(roll) * cos(yaw) + sin(yaw) * cos(roll)
-    local r = -cos(pitch) * sin(roll) * sin(yaw) - cos(yaw) * cos(roll)
+    local roll = self.r
+    local p = self.sinPitch * sin(roll)
+    local y = -self.cosPitch * sin(roll) * self.cosYaw + self.sinYaw * cos(roll)
+    local r = -self.cosPitch * sin(roll) * self.sinYaw - self.cosYaw * cos(roll)
     return Vector(y, r, p)
 end

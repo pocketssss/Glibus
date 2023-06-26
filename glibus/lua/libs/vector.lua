@@ -22,6 +22,11 @@ function vec:GetNormalized()
     return Vector(x, y, z)
 end
 
+function vec:ToColor()
+	local x, y, z = self.x, self.y, self.z
+	return Color(x * 255, y * 255, z * 255)
+end
+
 function vec.Dot(a, b)
     return a.x * b.x + a.y * b.y + a.z * b.z
 end

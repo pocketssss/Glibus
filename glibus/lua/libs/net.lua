@@ -1,19 +1,29 @@
 local net = net or {}
 
+local netLimit = 64
 local TYPE_COLOR = 255
 
 net.Receivers = {}
+local netCounter = {}
 
 local function ValidateColor(col)
 	return type(col) == "table" and type(col.r) == "number" and type(col.g) == "number" and type(col.b) == "number" and type(col.a) == "number"
 end
 
--- Set up a function to receive network messages
 function net.Receive(name, func)
-	net.Receivers[name:lower()] = func
+    local lowerName = name:lower()
+    net.Receivers[lowerName] = func
+
+    netCounter[lowerName] = (netCounter[lowerName] or 0) + 1
+
+    if netCounter[lowerName] > netLimit then
+        netCounter[lowerName] = netLimit
+        return
+    end
+
+    net.Receivers[lowerName]()
 end
 
--- A message has been received from the network..
 function net.Incoming(len, client)
 	local i = net.ReadHeader()
 	local strName = util.NetworkIDToString(i)
@@ -23,20 +33,17 @@ function net.Incoming(len, client)
 	local func = net.Receivers[strName:lower()]
 	if not func then return end
 
-	-- len includes the 16 bit int which told us the message name
 	len = len - 16
 
 	func(len, client)
 end
 
--- Read/Write a boolean to the stream
 net.WriteBool = net.WriteBit
 
 function net.ReadBool()
 	return net.ReadBit() == 1
 end
 
--- Read/Write an entity to the stream
 function net.WriteEntity(ent)
 	net.WriteUInt(IsValid(ent) and ent:EntIndex() or 0, 16)
 end
@@ -46,7 +53,6 @@ function net.ReadEntity()
 	return i and Entity(i)
 end
 
--- Read/Write a color to/from the stream
 function net.WriteColor(col, writeAlpha)
 	if writeAlpha == nil then writeAlpha = true end
 
@@ -72,17 +78,12 @@ function net.ReadColor(readAlpha)
 	return Color(r, g, b, a)
 end
 
--- Write a whole table to the stream
--- This is less optimal than writing each
--- item individually and in a specific order
--- because it adds type information before each var
 function net.WriteTable(tab)
 	for k, v in pairs(tab) do
 		net.WriteType(k)
 		net.WriteType(v)
 	end
 
-	-- End of table
 	net.WriteType(nil)
 end
 

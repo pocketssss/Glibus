@@ -1,20 +1,5 @@
--- local ffi = require("ffi") luaJIT
 local getkeys, rand, pairs = table.GetKeys, math.random, pairs
-
--- local C = ffi.C
--- local rand = math.random
-
--- ffi.cdef[[
--- typedef struct { int count; } Table;
--- ]]
-
--- function Table.Count(t)
--- return t.count
--- end
-
--- function Table.Empty(t)
--- t.count = 0
--- end
+local rand = math.random
 
 function table.Count(t)
     local count = 0
@@ -52,7 +37,6 @@ function table.Shuffle(tbl)
 
     return tbl
 end
-
 
 function table.GetWinningKey(t)
     local max_val, max_key

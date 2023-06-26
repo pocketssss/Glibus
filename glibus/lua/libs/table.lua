@@ -44,7 +44,7 @@ function table.Shuffle(tbl)
     local temp
 
     for i = len, 2, -1 do
-        rand = math.random(i)
+        rand = rand(i)
         temp = tbl[i]
         tbl[i] = tbl[rand]
         tbl[rand] = temp

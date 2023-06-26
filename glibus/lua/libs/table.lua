@@ -38,6 +38,21 @@ function table.Random(t)
     return t[rand_index]
 end
 
+function table.Shuffle(tbl)
+    local len = #tbl
+    local rand
+    local temp
+
+    for i = len, 2, -1 do
+        rand = math.random(i)
+        temp = tbl[i]
+        tbl[i] = tbl[rand]
+        tbl[rand] = temp
+    end
+
+    return tbl
+end
+
 
 function table.GetWinningKey(t)
     local max_val, max_key

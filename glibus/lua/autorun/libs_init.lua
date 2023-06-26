@@ -7,6 +7,7 @@ local function LibsInit()
 		"libs/net.lua",
 		"libs/table.lua",
 		"libs/util.lua",
+		"libs/collector.lua",
 		"libs/vector.lua" 
 	}
 

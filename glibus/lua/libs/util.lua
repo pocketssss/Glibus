@@ -40,23 +40,32 @@ function util.DateStamp()
     return string.format("%04d-%02d-%02d %02d-%02d-%02d", t.year, t.month, t.day, t.hour, t.min, t.sec)
 end
 
+local typeCodes = {
+    vector = 1,
+    angle = 2,
+    float = 3,
+    int = 4,
+    bool = 5,
+    string = 6,
+    entity = 7
+}
+
+local typeHandlers = {
+    [1] = function(str) return Vector(str) end,
+    [2] = function(str) return Angle(str) end,
+    [3] = function(str) return tonumber(str) end,
+    [4] = function(str) return math.Round(tonumber(str)) end,
+    [5] = function(str) return tobool(str) end,
+    [6] = function(str) return tostring(str) end,
+    [7] = function(str) return Entity(str) end
+}
+
 function util.StringToType(str, typename)
     typename = typename:lower()
-
-    if typename == "vector" then
-        return Vector(str)
-    elseif typename == "angle" then
-        return Angle(str)
-    elseif typename == "float" then
-        return tonumber(str)
-    elseif typename == "int" then
-        return math.Round(tonumber(str))
-    elseif typename == "bool" then
-        return tobool(str)
-    elseif typename == "string" then
-        return tostring(str)
-    elseif typename == "entity" then
-        return Entity(str)
+    local typeCode = typeCodes[typename]
+    if typeCode then
+        local handler = typeHandlers[typeCode]
+        return handler(str)
     else
         MsgN("util.StringToType: unknown type \"" .. typename .. "\"!")
     end

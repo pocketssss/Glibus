@@ -1,24 +1,37 @@
--- https://github.com/Srlion/Hook-Library/blob/master/hook.lua
--- I daresay my hooks might work better, but that's just a theory
--- If you can check it, check it
+-- Cache frequently used global functions
+local cached_functions = {
+    pairs = pairs,
+    setmetatable = setmetatable,
+    isstring = isstring,
+    isfunction = isfunction,
+    table_insert = table.insert,
+    math_min = math.min,
+    math_max = math.max
+}
+local pairs = cached_functions.pairs
+local setmetatable = cached_functions.setmetatable
+local isstring = cached_functions.isstring
+local isfunction = cached_functions.isfunction
+local table_insert = cached_functions.table_insert
+local math_min = cached_functions.math_min
+local math_max = cached_functions.math_max
 
-local pairs = pairs
-local setmetatable = setmetatable
-local isstring = isstring
-local isnumber = isnumber
-local isfunction = isfunction
-local insert = table.insert
+-- Define hook priorities
 local HOOK_MONITOR_HIGH = -2
 local HOOK_HIGH = -1
 local HOOK_NORMAL = 0
 local HOOK_LOW = 1
 local HOOK_MONITOR_LOW = 2
+
+-- Store events and hooks
 local events = {}
 
+-- Find a hook in an event
 local function find_hook(event, name)
     return event[name]
 end
 
+-- Copy an event with modified behavior
 local function copy_event(event, event_name, ...)
     local new_event = {}
 
@@ -34,7 +47,7 @@ local function copy_event(event, event_name, ...)
             local parent = events[event_name]
             local pos = find_hook(parent, name)
             if not pos then return end
-            
+
             if parent[name][3] ~= new_event[key + 2] then return end
 
             return parent[name][1]
@@ -51,9 +64,9 @@ local function copy_event(event, event_name, ...)
         else
             local pos = find_hook(events[event_name], hook_name)
             if not pos then
-                table.insert(events[event_name], hook)
+                table_insert(events[event_name], hook)
             else
-                table.insert(events[event_name], pos, hook)
+                table_insert(events[event_name], pos, hook)
             end
         end
 
@@ -66,7 +79,8 @@ local function copy_event(event, event_name, ...)
         end
     end
 end 
--- add hook
+
+-- Add a hook to an event
 function Add(event_name, name, func, priority)
     if not isstring(event_name) or not isfunction(func) or not name then return end
     
@@ -82,7 +96,7 @@ function Add(event_name, name, func, priority)
         end
     end
     
-    priority = math.min(math.max(priority or HOOK_NORMAL, HOOK_MONITOR_HIGH), HOOK_MONITOR_LOW)
+    priority = math_min(math_max(priority or HOOK_NORMAL, HOOK_MONITOR_HIGH), HOOK_MONITOR_LOW)
     if priority >= HOOK_MONITOR_HIGH and priority <= HOOK_MONITOR_LOW then
         func = function(...)
             func(...)
@@ -113,14 +127,15 @@ function Add(event_name, name, func, priority)
             event_pos = i + 4
         end
         
-        table.insert(event, event_pos, priority)
-        table.insert(event, event_pos, name)
-        table.insert(event, event_pos, func)
-        table.insert(event, event_pos, 1)
+        table_insert(event, event_pos, priority)
+        table_insert(event, event_pos, name)
+        table_insert(event, event_pos, func)
+        table_insert(event, event_pos, 1)
         event.n = event.n + 4
     end
 end
 
+-- Remove a hook from an event
 function Remove(event_name, name)
     if not isstring(event_name) or not name then return end
 
@@ -147,59 +162,60 @@ function Remove(event_name, name)
     events[event_name] = copy_event(event, event_name)
 end
 
+-- Get a table of events and hooks
 function GetTable()
-	local new_events = {}
-	for event_name, event in next, events, nil do
-		new_events[event_name] = {}
-		for i = 1, event.n, 4 do
-			local name = event[i]
-			if name then
-				new_events[event_name][name] = event[i + 2] --[[real_func]]
-			end
-		end
-	end
+    local new_events = {}
+    for event_name, event in next, events, nil do
+        new_events[event_name] = {}
+        for i = 1, event.n, 4 do
+            local name = event[i]
+            if name then
+                new_events[event_name][name] = event[i + 2] --[[real_func]]
+            end
+        end
+    end
 
-	return new_events
+    return new_events
 end
 
+-- Call hooks and gamemode function
 function Call(event_name, gm, max_return_values, ...)
-	local event = events[event_name]
-	if event then
-		local i, n = 2, event.n
-		local results = {}
-		local num_results = 0
-		::loop::
-		local func = event[i]
-		if func then
-			local a, b, c, d, e, f = func(...)
-			if a ~= nil then
-				num_results = num_results + 1
-				results[num_results] = a
-				if num_results == max_return_values then
-					return unpack(results, 1, max_return_values)
-				end
-			end
-		end
-		i = i + 4
-		if i <= n then
-			goto loop
-		end
-		if num_results > 0 then
-			return unpack(results, 1, num_results)
-		end
-	end
+    local event = events[event_name]
+    if event then
+        local i, n = 2, event.n
+        local results = {}
+        local num_results = 0
+        ::loop::
+        local func = event[i]
+        if func then
+            local a, b, c, d, e, f = func(...)
+            if a ~= nil then
+                num_results = num_results + 1
+                results[num_results] = a
+                if num_results == max_return_values then
+                    return unpack(results, 1, max_return_values)
+                end
+            end
+        end
+        i = i + 4
+        if i <= n then
+            goto loop
+        end
+        if num_results > 0 then
+            return unpack(results, 1, num_results)
+        end
+    end
 
-	--
-	-- Call the gamemode function
-	--
-	if not gm then return end
+    -- Call the gamemode function
+    if not gm then return end
 
-	local GamemodeFunction = gm[event_name]
-	if not GamemodeFunction then return end
+    local GamemodeFunction = gm[event_name]
+    if not GamemodeFunction then return end
 
-	return GamemodeFunction(gm, ...)
+    return GamemodeFunction(gm, ...)
 end
 
+-- Run a named event
 function Run(name, ...)
-	return Call(name, gmod and gmod.GetGamemode() or nil, ...)
+    return Call(name, gmod and gmod.GetGamemode() or nil, ...)
 end

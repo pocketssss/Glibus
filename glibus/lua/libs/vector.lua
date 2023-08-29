@@ -5,6 +5,14 @@ function vec:Length()
 	return (x * x + y * y + z * z) ^ .5
 end
 
+-- maybe some this ? 
+-- function vec:Length()
+--     if not self._length then
+--         self._length = (self.x * self.x + self.y * self.y + self.z * self.z) ^ 0.5
+--     end
+--     return self._length
+-- end
+
 function vec:Distance(pos)
     local v = self - pos
     local x, y, z = v.x, v.y, v.z
@@ -20,11 +28,6 @@ function vec:GetNormalized()
 	local l = 1 / self:Length() 
 	local x, y, z = self.x * l, self.y * l, self.z * l
     return Vector(x, y, z)
-end
-
-function vec:ToColor()
-	local x, y, z = self.x, self.y, self.z
-	return Color(x * 255, y * 255, z * 255)
 end
 
 function vec.Dot(a, b)

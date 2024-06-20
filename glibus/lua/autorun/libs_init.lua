@@ -1,6 +1,5 @@
 local function LibsInit()
 	local files = {
-		"libs/ents.lua",
 		"libs/file.lua",
 		"libs/hook.lua",
 		"libs/math.lua",

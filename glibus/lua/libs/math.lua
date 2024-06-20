@@ -1,6 +1,6 @@
-local doublepi = math.pi * 2
-local halfpi = math.pi * 0.5
 local pi = math.pi
+local doublepi = pi * 2
+local halfpi = pi * 0.5
 
 local select = select
 local fmod = math.fmod
@@ -9,6 +9,8 @@ local random = math.random
 local a = -0.255
 local b = 1.27323954
 local c = 0.405284735
+
+math.huge = 1 + 2 ^ 64 -- fix boneclipping in PAC3
 
 local function math.rad(n)
   return n * pi / 180

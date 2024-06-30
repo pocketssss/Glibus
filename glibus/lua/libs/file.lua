@@ -31,7 +31,6 @@ end
 local function fileWrite(filename, contents)
     local f = file.Open(filename, "wb", "DATA")
     if not f then return end
-
     f:Write(contents)
     f:Close()
 end
@@ -39,7 +38,6 @@ end
 local function fileAppend(filename, contents)
     local f = file.Open(filename, "ab", "DATA")
     if not f then return end
-
     f:Write(contents)
     f:Close()
 end

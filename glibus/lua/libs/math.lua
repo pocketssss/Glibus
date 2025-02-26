@@ -1,118 +1,91 @@
-local pi = math.pi
-local doublepi = pi * 2
-local halfpi = pi * 0.5
+local pi, doublepi. halfpi, fmod, random, abs, floor = math.pi, pi * 2, pi * 0.5, math.fmod,  math.random, math.abs, math.floor
+local a_sin, b_sin, a_cos, b_cos, qsin_coeff1, qsin_coeff2 = -0.166667, 0.00833, -0.166667, -0.000198, 1.27323954, 0.405284735
 
-local select = select
-local fmod = math.fmod
-local random = math.random
-
-local a = -0.255
-local b = 1.27323954
-local c = 0.405284735
-
-math.huge = 1 + 2 ^ 64 -- fix boneclipping in PAC3
-
-local function math.rad(n)
-  return n * pi / 180
+local function normalize_angle(n)
+    return n - doublepi * floor((n + pi) / doublepi)
 end
 
-local function math.deg(n)
-  return n * 180 / pi
+local function max(...)
+    local m = select(1, ...)
+    for i = 2, select('#', ...) do
+        local v = select(i, ...)
+        if v > m then m = v end
+    end
+    return m
 end
 
-local function max(max, ...)
-  for i = 1, select('#', ...) do
-    local v = select(i, ...)
-    max = (max < v) and v or max
-  end
-  return max
-end
-
-local function min(min, ...)
-  for i = 1, select('#', ...) do
-    local v = select(i, ...)
-    min = (min > v) and v or min
-  end
-  return min
-end
-
-local function math.SharedRandom(l, h)
-  l = l or 0
-  h = h or l or 0xFFFFFF
-  return math.floor(random() * (h - l + 1) + l)
+local function min(...)
+    local m = select(1, ...)
+    for i = 2, select('#', ...) do
+        local v = select(i, ...)
+        if v < m then m = v end
+    end
+    return m
 end
 
 local function math.Clamp(n, l, h)
-  return min(max(n, l), h)
+    return n < l and l or (n > h and h or n)
 end
 
-local cache = {}
+local CACHE_SIZE = 1024
+local sin_cache = {}
+local cos_cache = {}
+local cache_keys = {}
 
-local function math.sin_cos(n)
-  n = fmod(n, doublepi)
-  if n < -pi then
-    n = n + doublepi
-  elseif n > pi then
-    n = n - doublepi
-  end
-
-  if cache[n] then
-    return cache[n].sin, cache[n].cos
-  end
-
-  local x2 = n * n
-  local sin = n * (1 + x2 * (a + x2 * b))
-  local cos = 1 + x2 * (a + x2 * c)
-
-  cache[n] = {sin = sin, cos = cos}
-
-  return sin, cos
+local function add_to_cache(n, sin, cos)
+    local key = n % CACHE_SIZE
+    sin_cache[key] = sin
+    cos_cache[key] = cos
+    cache_keys[key] = n
 end
 
-local function math.sin(n)
-  n = fmod(n, doublepi)
-
-  if n < -pi then
-    n = n + doublepi
-  elseif n > pi then
-    n = n - doublepi
-  end
-
-  local x2 = n * n
-
-  return n * (1 + x2 * (-.166667 + x2 * .00833))
+local function get_from_cache(n)
+    local key = n % CACHE_SIZE
+    return cache_keys[key] == n and sin_cache[key] or nil
 end
 
-local function math.cos(n)
-  n = fmod(n, doublepi)
-
-  if n < -pi then
-    n = n + doublepi
-  elseif n > pi then
-    n = n - doublepi
-  end
-
-  local x2 = n * n
-
-  return 1 + x2 * (-.166667 + x2 * -.000198)
+local function math.sincos(n)
+    n = normalize_angle(n)
+    
+    local cached_sin = get_from_cache(n)
+    if cached_sin then
+        return cached_sin, cos_cache[n % CACHE_SIZE]
+    end
+    
+    local x = n
+    local x2 = x * x
+    local sin = x * (1 + x2 * (a_sin + x2 * b_sin))
+    local cos = 1 + x2 * (a_cos + x2 * b_cos)
+    
+    add_to_cache(n, sin, cos)
+    return sin, cos
 end
 
-local function qsin(n)
-  n = fmod(n, doublepi)
-
-  if n < -pi then
-    n = n + doublepi
-  elseif n > pi then
-    n = n - doublepi
-  end
-
-  if n < 0 then
-    return n * (1.27323954 + .405284735 * n)
-  else
-    return n * (1.27323954 - .405284735 * n)
-  end
+local function math.qsin(n)
+    n = normalize_angle(n)
+    local x = n * (qsin_coeff1 - qsin_coeff2 * abs(n))
+    return x - 0.225 * x * (abs(x) - x)
 end
 
-local function qcos(n)
-  return qsin(n + halfpi)
+local function math.qcos(n)
+    return math.qsin(n + halfpi)
+end
+
+local rad_coeff = pi / 180
+local deg_coeff = 180 / pi
+
+function math.rad(n)
+    return n * rad_coeff
+end
+
+function math.deg(n)
+    return n * deg_coeff
+end
+
+local rand_state = 1
+local function math.SharedRandom(l, h)
+    l = l or 0
+    h = h or l or 0xFFFFFF
+    rand_state = (rand_state * 1103515245 + 12345) % 0x7FFFFFFF
+    return l + (rand_state % (h - l + 1))
 end

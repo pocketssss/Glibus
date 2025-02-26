@@ -1,35 +1,39 @@
 local vec = FindMetaTable("Vector")
+local sqrt = math.sqrt
+local Vector = Vector
 
-function vec:Length()
-    local x, y, z = self.x, self.y, self.z
-	return (x * x + y * y + z * z) ^ .5
+local _x, _y, _z = 1, 2, 3 
+local getmetatable = getmetatable
+
+local function fast_len(x, y, z)
+    return sqrt(x*x + y*y + z*z)
 end
 
--- maybe some this ? 
--- function vec:Length()
---     if not self._length then
---         self._length = (self.x * self.x + self.y * self.y + self.z * self.z) ^ 0.5
---     end
---     return self._length
--- end
+function vec:Length()
+    return fast_len(self.x, self.y, self.z)
+end
 
 function vec:Distance(pos)
-    local v = self - pos
-    local x, y, z = v.x, v.y, v.z
-    return (x * x + y * y + z * z) ^ .5
+    local dx = self.x - pos.x
+    local dy = self.y - pos.y
+    local dz = self.z - pos.z
+    return fast_len(dx, dy, dz)
 end
 
 function vec.Normalize(v)
-    local l = 1 / v:Length()
-    v.x, v.y, v.z = v.x * l, v.y * l, v.z * l
+    local x, y, z = v.x, v.y, v.z
+    local len = sqrt(x*x + y*y + z*z)
+    local il = 1 / (len + 1e-10) 
+    v.x, v.y, v.z = x*il, y*il, z*il
 end
 
 function vec:GetNormalized()
-	local l = 1 / self:Length() 
-	local x, y, z = self.x * l, self.y * l, self.z * l
-    return Vector(x, y, z)
+    local x, y, z = self.x, self.y, self.z
+    local len = sqrt(x*x + y*y + z*z)
+    local il = 1 / (len + 1e-10)
+    return Vector(x*il, y*il, z*il)
 end
 
 function vec.Dot(a, b)
-    return a.x * b.x + a.y * b.y + a.z * b.z
+    return a.x*b.x + a.y*b.y + a.z*b.z
 end

@@ -1,4 +1,4 @@
-local pi, doublepi. halfpi, fmod, random, abs, floor = math.pi, pi * 2, pi * 0.5, math.fmod,  math.random, math.abs, math.floor
+local pi, doublepi, halfpi, fmod, random, abs, floor = math.pi, math.pi * 2, math.pi * 0.5, math.fmod, math.random, math.abs, math.floor
 local a_sin, b_sin, a_cos, b_cos, qsin_coeff1, qsin_coeff2 = -0.166667, 0.00833, -0.166667, -0.000198, 1.27323954, 0.405284735
 
 local function normalize_angle(n)
@@ -23,7 +23,7 @@ local function min(...)
     return m
 end
 
-local function math.Clamp(n, l, h)
+function math.Clamp(n, l, h)
     return n < l and l or (n > h and h or n)
 end
 
@@ -44,7 +44,7 @@ local function get_from_cache(n)
     return cache_keys[key] == n and sin_cache[key] or nil
 end
 
-local function math.sincos(n)
+function math.sincos(n)
     n = normalize_angle(n)
     
     local cached_sin = get_from_cache(n)
@@ -61,13 +61,13 @@ local function math.sincos(n)
     return sin, cos
 end
 
-local function math.qsin(n)
+function math.qsin(n)
     n = normalize_angle(n)
     local x = n * (qsin_coeff1 - qsin_coeff2 * abs(n))
     return x - 0.225 * x * (abs(x) - x)
 end
 
-local function math.qcos(n)
+function math.qcos(n)
     return math.qsin(n + halfpi)
 end
 
@@ -83,7 +83,7 @@ function math.deg(n)
 end
 
 local rand_state = 1
-local function math.SharedRandom(l, h)
+function math.SharedRandom(l, h)
     l = l or 0
     h = h or l or 0xFFFFFF
     rand_state = (rand_state * 1103515245 + 12345) % 0x7FFFFFFF

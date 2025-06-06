@@ -1,30 +1,21 @@
--- Cache frequently used global functions
-local cached_functions = {
-    pairs = pairs,
-    setmetatable = setmetatable,
-    isstring = isstring,
-    isfunction = isfunction,
-    table_insert = table.insert,
-    math_min = math.min,
-    math_max = math.max
-}
-local pairs = cached_functions.pairs
-local setmetatable = cached_functions.setmetatable
-local isstring = cached_functions.isstring
-local isfunction = cached_functions.isfunction
-local table_insert = cached_functions.table_insert
-local math_min = cached_functions.math_min
-local math_max = cached_functions.math_max
+-- Cache frequently used global functions for maximum performance
+local pairs, next, type = pairs, next, type
+local setmetatable, getmetatable = setmetatable, getmetatable
+local isstring, isfunction, IsValid = isstring, isfunction, IsValid
+local table_insert, table_remove, table_sort = table.insert, table.remove, table.sort
+local math_min, math_max = math.min, math.max
+local unpack = unpack or table.unpack
 
--- Define hook priorities
+-- Define hook priorities as constants
 local HOOK_MONITOR_HIGH = -2
 local HOOK_HIGH = -1
 local HOOK_NORMAL = 0
 local HOOK_LOW = 1
 local HOOK_MONITOR_LOW = 2
 
--- Store events and hooks
+-- Optimized storage for events and hooks
 local events = {}
+local event_cache = {}  -- Cache for faster lookups
 
 -- Find a hook in an event
 local function find_hook(event, name)

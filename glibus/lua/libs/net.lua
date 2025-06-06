@@ -1,9 +1,22 @@
+-- Optimized Network Library for Garry's Mod
 local net = net or {}
-local netLimit = 64
+
+-- Configuration constants
+local NET_LIMIT = 64
 local TYPE_COLOR = 255
-local pairs, type, util_NetworkIDToString, math_min, error, assert = pairs, type, util.NetworkIDToString, math.min, error, assert
-local net_Receivers = {}
-local netCounter = {}
+local MAX_CACHE_SIZE = 256
+
+-- Cache frequently used functions
+local pairs, type, next = pairs, type, next
+local util_NetworkIDToString = util.NetworkIDToString
+local math_min, math_max = math.min, math.max
+local error, assert = error, assert
+local string_lower = string.lower
+
+-- Optimized storage
+local net_receivers = {}
+local net_counter = {}
+local receiver_cache = {}  -- Cache for faster lookups
 
 local colorMeta = FindMetaTable("Color")
 local function ValidateColor(col)

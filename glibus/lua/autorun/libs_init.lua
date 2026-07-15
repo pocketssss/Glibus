@@ -1,80 +1,50 @@
--- Optimized Glibus Library Initialization System
--- Loads all optimization libraries in correct order
+--------------------------------------------------------------------
+-- Runs ONCE per realm. Never re-run: re-including hook.lua would
+-- recreate its event storage and wipe all registered hooks.
+--------------------------------------------------------------------
 
-local function LibsInit()
-	local files = {
-		-- Configuration system (load first)
-		"libs/config.lua",
-		
-		-- Core utilities
-		"libs/math.lua",
-		"libs/table.lua",
-		"libs/vector.lua",
-		"libs/util.lua",
-		"libs/file.lua",
-		
-		-- Memory management (load early)
-		"libs/collector.lua",
-		
-		-- Networking and communication
-		"libs/net.lua",
-		"libs/networking.lua",
-		
-		-- Performance systems
-		"libs/hook_optimized.lua",  -- Use optimized version
-		"libs/physics.lua",
-		"libs/render.lua",
-		"libs/entity_manager.lua",
-		"libs/database.lua",
-		
-		-- Monitoring (load last)
-		"libs/performance_monitor.lua"
-	}
+local FILES = {
+    "libs/hook.lua",
+    "libs/math.lua",
+    "libs/vector.lua",
+}
 
-	local start_time = SysTime()
-	local loaded_count = 0
-	
-	print("[GLIBUS] Starting library initialization...")
-
-	for i = 1, #files do
-		local filepath = files[i]
-		local file_start = SysTime()
-		
-		-- Add to client download
-		AddCSLuaFile(filepath)
-		
-		-- Include on server/client
-		local success, error_msg = pcall(include, filepath)
-		
-		if success then
-			loaded_count = loaded_count + 1
-			local load_time = SysTime() - file_start
-			print(string.format("[GLIBUS] ✓ Loaded %s (%.3fs)", filepath, load_time))
-		else
-			print(string.format("[GLIBUS] ✗ Failed to load %s: %s", filepath, error_msg))
-		end
-	end
-
-	local total_time = SysTime() - start_time
-	print(string.format("[GLIBUS] Library initialization complete: %d/%d files loaded in %.3fs", 
-		loaded_count, #files, total_time))
-	
-	-- Initialize performance monitoring
-	if SERVER then
-		timer.Simple(1, function()
-			print("[GLIBUS] Performance monitoring systems active")
-			
-			-- Log initial memory state
-			if MemoryManager then
-				local stats = MemoryManager.stats()
-				print(string.format("[GLIBUS] Initial memory usage: %.2fKB", stats.current_usage_kb))
-			end
-		end)
-	end
-
-	files = nil
+local function log(fmt, ...)
+    print("[lib] " .. string.format(fmt, ...))
 end
 
--- Load immediately and on gamemode load
-LibsInit()
-hook.Add("PostGamemodeLoaded", "GlibusLibsInit", LibsInit)
+local t0 = SysTime()
+local failed = 0
+local pre_existing = hook.GetTable()
+
+for i = 1, #FILES do
+    local path = FILES[i]
+
+    if not file.Exists(path, "LUA") then
+        failed = failed + 1
+        log("[FAIL] %s: file not found", path)
+    else
+        if SERVER then AddCSLuaFile(path) end
+
+        local ok, err = pcall(include, path)
+        if not ok then
+            failed = failed + 1
+            log("[FAIL] %s: %s", path, tostring(err))
+        end
+
+        if path == "glibus/hook.lua" and ok then
+            local migrated = 0
+            for event, hooks in pairs(pre_existing) do
+                for name, fn in pairs(hooks) do
+                    hook.Add(event, name, fn)
+                    migrated = migrated + 1
+                end
+            end
+            if migrated > 0 then
+                log("migrated %d pre-existing hooks", migrated)
+            end
+        end
+    end
+end
+
+log("loaded %d/%d in %.1f ms", #FILES - failed, #FILES, (SysTime() - t0) * 1000)

@@ -1,30 +1,48 @@
-local vec = FindMetaTable("Vector")
-local Vector = Vector
-local sqrt = math.sqrt
+--------------------------------------------------------------------
+-- Length, Distance, Normalize, Dot, Cross, LengthSqr, DistToSqr,
+-- GetNormalized, IsZero are intentionally NOT redefined here.
+-- They are native C++ engine methods, and any Lua replacement
+-- of them is slower.
+--
+-- Key optimization: method functions are localized once. Vector's
+-- __index is a C function, so `self:Unpack()` costs TWO boundary
+-- crossings (method lookup + call); `Unpack(self)` costs one.
+--------------------------------------------------------------------
 
-local function clamp(n, l, h)
-    return n < l and l or (n > h and h or n)
-end
+local vec    = FindMetaTable("Vector")
+local Vector = Vector
+local sqrt   = math.sqrt
+
+local Unpack      = vec.Unpack
+local SetUnpacked = vec.SetUnpacked
 
 function vec:Clamp(mn, mx)
-    local x, y, z    = self:Unpack()
-    local ax, ay, az = mn:Unpack()
-    local bx, by, bz = mx:Unpack()
-    self:SetUnpacked(clamp(x, ax, bx), clamp(y, ay, by), clamp(z, az, bz))
+    local x, y, z    = Unpack(self)
+    local ax, ay, az = Unpack(mn)
+    local bx, by, bz = Unpack(mx)
+    SetUnpacked(self,
+        x < ax and ax or (x > bx and bx or x),
+        y < ay and ay or (y > by and by or y),
+        z < az and az or (z > bz and bz or z)
+    )
     return self
 end
 
 function vec:GetClamped(mn, mx)
-    local x, y, z    = self:Unpack()
-    local ax, ay, az = mn:Unpack()
-    local bx, by, bz = mx:Unpack()
-    return Vector(clamp(x, ax, bx), clamp(y, ay, by), clamp(z, az, bz))
+    local x, y, z    = Unpack(self)
+    local ax, ay, az = Unpack(mn)
+    local bx, by, bz = Unpack(mx)
+    return Vector(
+        x < ax and ax or (x > bx and bx or x),
+        y < ay and ay or (y > by and by or y),
+        z < az and az or (z > bz and bz or z)
+    )
 end
 
 function vec:Min(other)
-    local x, y, z    = self:Unpack()
-    local ox, oy, oz = other:Unpack()
-    self:SetUnpacked(
+    local x, y, z    = Unpack(self)
+    local ox, oy, oz = Unpack(other)
+    SetUnpacked(self,
         x < ox and x or ox,
         y < oy and y or oy,
         z < oz and z or oz
@@ -32,15 +50,10 @@ function vec:Min(other)
     return self
 end
 
--- Length, Distance, Normalize, Dot, Cross, LengthSqr, DistToSqr,
--- GetNormalized, IsZero are intentionally NOT redefined here.
--- They are native C++ engine methods, and any Lua replacement
--- of them is slower.
-
 function vec:Max(other)
-    local x, y, z    = self:Unpack()
-    local ox, oy, oz = other:Unpack()
-    self:SetUnpacked(
+    local x, y, z    = Unpack(self)
+    local ox, oy, oz = Unpack(other)
+    SetUnpacked(self,
         x > ox and x or ox,
         y > oy and y or oy,
         z > oz and z or oz
@@ -49,8 +62,8 @@ function vec:Max(other)
 end
 
 function vec:GetMin(other)
-    local x, y, z    = self:Unpack()
-    local ox, oy, oz = other:Unpack()
+    local x, y, z    = Unpack(self)
+    local ox, oy, oz = Unpack(other)
     return Vector(
         x < ox and x or ox,
         y < oy and y or oy,
@@ -59,8 +72,8 @@ function vec:GetMin(other)
 end
 
 function vec:GetMax(other)
-    local x, y, z    = self:Unpack()
-    local ox, oy, oz = other:Unpack()
+    local x, y, z    = Unpack(self)
+    local ox, oy, oz = Unpack(other)
     return Vector(
         x > ox and x or ox,
         y > oy and y or oy,
@@ -69,17 +82,17 @@ function vec:GetMax(other)
 end
 
 function vec:ClampLength(maxlen)
-    local x, y, z = self:Unpack()
+    local x, y, z = Unpack(self)
     local lsq = x * x + y * y + z * z
     if lsq > maxlen * maxlen then
         local s = maxlen / sqrt(lsq)
-        self:SetUnpacked(x * s, y * s, z * s)
+        SetUnpacked(self, x * s, y * s, z * s)
     end
     return self
 end
 
 function vec:GetClampedLength(maxlen)
-    local x, y, z = self:Unpack()
+    local x, y, z = Unpack(self)
     local lsq = x * x + y * y + z * z
     if lsq > maxlen * maxlen then
         local s = maxlen / sqrt(lsq)
@@ -89,10 +102,10 @@ function vec:GetClampedLength(maxlen)
 end
 
 function vec:LerpTo(other, t)
-    local x, y, z    = self:Unpack()
-    local ox, oy, oz = other:Unpack()
+    local x, y, z    = Unpack(self)
+    local ox, oy, oz = Unpack(other)
     local it = 1 - t
-    self:SetUnpacked(
+    SetUnpacked(self,
         x * it + ox * t,
         y * it + oy * t,
         z * it + oz * t

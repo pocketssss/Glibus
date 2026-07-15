@@ -1,179 +1,195 @@
-# Glibus - Advanced Optimization Library for Garry's Mod
-## 📦 Установка
+# GLua FastPath
 
-1. Скопируйте папку `Glibus` в ваш аддон или gamemode
-2. Библиотеки загрузятся автоматически через `autorun`
-3. Настройте конфигурацию через `GlibusConfig`
+Набор низкоуровневых оптимизаций для **Garry's Mod / LuaJIT**.
 
-## ⚙️ Конфигурация
+GLua FastPath не является универсальным «FPS booster». Проект заменяет стандартную систему `hook` собственной реализацией и добавляет несколько функций для `math` и `Vector`.
 
-### Базовая настройка
-```lua
--- Установить лимит памяти
-GlibusConfig.Set("memory.limit_kb", 1024)
+Основная цель — уменьшить накладные расходы в горячих Lua-путях, не заменяя быстрые нативные методы движка более медленным Lua-кодом.
 
--- Включить дистанционное отсечение
-GlibusConfig.Set("entities.distance_culling", true)
+> [!WARNING]
+> Библиотека находится в экспериментальном состоянии. Замена глобального модуля `hook` влияет на весь сервер и клиентские аддоны. Перед использованием на production-сервере проверьте совместимость со своим gamemode и набором аддонов.
 
--- Настроить сжатие сети
-GlibusConfig.Set("networking.compression_enabled", true)
+## Возможности
+
+### Оптимизированная система hooks
+
+- плоские массивы callbacks в горячем пути;
+- copy-on-write перестроение списков при добавлении и удалении hooks;
+- обновление функции существующего hook за `O(1)`, если приоритет не изменился;
+- приоритеты выполнения;
+- pre/post hooks;
+- автоматическое удаление hook, привязанного к невалидной Entity;
+- кэширование текущего gamemode;
+- совместимый интерфейс `hook.Add`, `hook.Remove`, `hook.Run`, `hook.Call` и `hook.GetTable`;
+- частичная совместимость с ULib;
+- предупреждение о конфликте с DLib.
+
+### Математические функции
+
+- `math.NormalizeAngleRad`;
+- `math.Max2`, `math.Min2`;
+- `math.Max3`, `math.Min3`;
+- `math.MaxT`, `math.MinT`;
+- `math.sincos`;
+- приближённые `math.qsin` и `math.qcos`;
+- детерминированный shared random generator.
+
+### Расширения Vector
+
+- `Vector:Clamp` и `Vector:GetClamped`;
+- `Vector:Min`, `Vector:Max`;
+- `Vector:GetMin`, `Vector:GetMax`;
+- `Vector:ClampLength` и `Vector:GetClampedLength`;
+- `Vector:LerpTo`.
+
+Нативные методы вроде `Length`, `Distance`, `Dot`, `Cross`, `Normalize` и `DistToSqr` намеренно не переопределяются: реализации движка на C++ быстрее Lua-кода.
+
+## Установка
+
+Скопируйте каталог `glibus` в папку аддонов Garry's Mod:
+
+```text
+garrysmod/
+└── addons/
+    └── fastpath/
+        └── lua/
+            ├── autorun/
+            │   └── libs_init.lua
+            └── libs/
+                ├── hook.lua
+                ├── math.lua
+                └── vector.lua
 ```
 
-### Пресеты производительности
-```lua
--- Максимальная производительность
-GlibusConfig.ApplyPreset("performance")
+После запуска `libs_init.lua` загрузчик автоматически подключит библиотеки в server/client realms и выведет результат загрузки в консоль:
 
--- Максимальное качество
-GlibusConfig.ApplyPreset("quality")
-
--- Сбалансированный режим
-GlibusConfig.ApplyPreset("balanced")
+```text
+[lib] loaded 3/3 in 0.0 ms
 ```
 
-## 🔧 API Документация
+Отдельная конфигурация не требуется.
 
-### Управление памятью
+## Hook API
+### Базовое использование
+
 ```lua
--- Получить/вернуть объекты из пула
-local vec = MemoryManager.getVector(0, 0, 0)
-MemoryManager.returnVector(vec)
-
--- Принудительная очистка
-MemoryManager.cleanup()
-
--- Статистика
-local stats = MemoryManager.stats()
-```
-
-### Рендеринг
-```lua
--- Оптимизированное рисование
-render.DrawRect(x, y, w, h, color)
-render.DrawCircle(x, y, radius, segments, color)
-
--- Батчинг операций
-render.QueueRect(x, y, w, h, color)
-render.FlushBatch()
-
--- Кэшированные материалы
-local mat = render.GetMaterial("path/to/material")
-```
-
-### Физика
-```lua
--- Оптимизированные трейсы
-local trace = physics.TraceLine(start, endpos, filter)
-
--- Поиск энтити в радиусе
-local entities = physics.FindEntitiesInSphere(center, radius)
-
--- Батчинг физических операций
-physics.QueuePhysicsUpdate(ent, pos, ang, vel, angvel)
-physics.FlushPhysicsBatch()
-```
-
-### Сетевое взаимодействие
-```lua
--- Отправка оптимизированных сообщений
-Networking.Send("MessageName", data, targets, reliable)
-
--- Получение сообщений
-Networking.Receive("MessageName", function(data, ply)
-    -- Обработка данных
+hook.Add("Think", "GlibusExample", function()
+    local frameTime = FrameTime()
 end)
 
--- Батчинг сообщений
-local batch = Networking.StartBatch(target)
-Networking.AddToBatch(batch, "Message1", data1)
-Networking.SendBatch(batch, target)
+hook.Remove("Think", "GlibusExample")
 ```
 
-### Управление энтити
+### Приоритеты
+Числовые приоритеты ограничиваются диапазоном от `-2` до `2`:
+
 ```lua
--- Регистрация энтити
-EntityManager.Register(ent, EntityManager.CATEGORIES.NORMAL)
+hook.Add("PlayerSpawn", "BeforeMostHooks", function(ply)
+end, HOOK_HIGH)
 
--- Проверка видимости
-if EntityManager.IsVisible(ent) then
-    -- Рендерить энтити
-end
-
--- Получение LOD уровня
-local lod = EntityManager.GetLOD(ent)
+hook.Add("PlayerSpawn", "AfterMostHooks", function(ply)
+end, HOOK_LOW)
 ```
 
-### База данных
+| Константа | Значение | Поведение |
+|---|---:|---|
+| `HOOK_MONITOR_HIGH` | `-2` | Выполняется рано, return игнорируется |
+| `HOOK_HIGH` | `-1` | Высокий приоритет |
+| `HOOK_NORMAL` | `0` | Обычный приоритет |
+| `HOOK_LOW` | `1` | Низкий приоритет |
+| `HOOK_MONITOR_LOW` | `2` | Выполняется поздно, return игнорируется |
+
+Дополнительные режимы:
+
+| Константа | Поведение |
+|---|---|
+| `PRE_HOOK` | Выполняется до обычных hooks, return игнорируется |
+| `PRE_HOOK_RETURN` | Выполняется до обычных hooks и может вернуть результат |
+| `NORMAL_HOOK` | Обычный hook |
+| `POST_HOOK_RETURN` | Получает результат dispatch и может заменить его |
+| `POST_HOOK` | Выполняется после dispatch, return игнорируется |
+
+### Post hook
+Первым аргументом post hook получает таблицу результата:
+
 ```lua
--- Выполнение запросов с кэшированием
-local result = Database.Query("SELECT * FROM table WHERE id = ?", {id})
-
--- Батчинг операций
-Database.AddToBatch("INSERT INTO table VALUES (?, ?)", {val1, val2})
-Database.FlushBatch()
-
--- Транзакции
-local results = Database.Transaction({
-    {query = "INSERT INTO table1 VALUES (?)", params = {value1}},
-    {query = "UPDATE table2 SET field = ?", params = {value2}}
-})
+hook.Add("PlayerCanHearPlayersVoice", "InspectVoiceResult", function(result, listener, talker)
+    local source = result[1]
+    local canHear = result[2]
+    local is3D = result[3]
+end, POST_HOOK)
 ```
 
-## 📈 Мониторинг производительности
+Для `POST_HOOK_RETURN` callback может вернуть новое значение события.
 
-### Консольные команды
-```
-glibus_performance_report     - Показать отчет о производительности
-glibus_performance_export     - Экспортировать данные производительности
-glibus_config_get <path>      - Получить значение конфигурации
-glibus_config_set <path> <val> - Установить значение конфигурации
-glibus_config_preset <name>   - Применить пресет конфигурации
-```
+Функция выводит зарегистрированные callbacks, приоритеты и внутренние позиции.
 
-### Профилирование кода
+## Math API
 ```lua
--- Начать профилирование
-PerformanceMonitor.StartProfile("MyFunction")
-
--- Ваш код здесь
-
--- Завершить профилирование
-local result = PerformanceMonitor.EndProfile("MyFunction")
-print("Время выполнения:", result.duration)
+local normalized = math.NormalizeAngleRad(math.pi * 3)
+local minimum = math.Min3(10, 5, 20)
+local sine, cosine = math.sincos(1.25)
 ```
 
-### Получение статистики
+### Быстрые приближения
+
 ```lua
--- Статистика производительности
-local stats = PerformanceMonitor.GetStats()
-print("Текущий FPS:", stats.fps.current)
-print("Использование памяти:", stats.memory.current)
-
--- Последние алерты
-local alerts = PerformanceMonitor.GetAlerts(10)
+local approximateSine = math.qsin(angle)
+local approximateCosine = math.qcos(angle)
 ```
 
-## 🎯 Рекомендации по оптимизации
+`qsin`, `qcos` и `sincos` обменивают точность на скорость. Не используйте их там, где ошибка вычисления влияет на физику, сетевую синхронизацию или security checks.
 
-### Для разработчиков
-1. **Используйте пулы объектов** для часто создаваемых Vector/Angle
-2. **Кэшируйте материалы** вместо создания новых
-3. **Батчите операции** рендеринга и физики
-4. **Ограничивайте дистанцию** обновления энтити
-5. **Используйте LOD** для дальних объектов
+### Детерминированный random
 
-## 🤝 Вклад в проект
+```lua
+math.SharedRandomSeed(1337)
 
-1. Fork репозитория
-2. Создайте feature branch
-3. Внесите изменения
-4. Добавьте тесты
-5. Создайте Pull Request
+local integer = math.SharedRandom(1, 100)
+local fastInteger = math.SharedRandomFast(1, 100)
+local fraction = math.SharedRandomFloat()
+```
 
-## 🆘 Поддержка
+Генератор имеет общее состояние внутри realm. Повторная установка одинакового seed воспроизводит последовательность только при одинаковом порядке вызовов.
 
-Если у вас возникли проблемы:
-1. Проверьте консоль на ошибки
-2. Используйте `glibus_performance_report`
-3. Экспортируйте данные производительности
-4. Создайте issue с подробным описанием
+## Vector API
+Методы без префикса `Get` изменяют исходный Vector. Методы с `Get` создают новый Vector.
+
+```lua
+local position = Vector(150, -20, 500)
+position:Clamp(Vector(0, 0, 0), Vector(100, 100, 100))
+
+local direction = Vector(100, 50, 25)
+direction:ClampLength(32)
+
+local interpolated = Vector(0, 0, 0)
+interpolated:LerpTo(Vector(100, 100, 100), 0.5)
+```
+
+## Совместимость
+- Garry's Mod LuaJIT;
+- server и client realms;
+- ULib: FastPath пытается предотвратить загрузку hook-библиотеки ULib;
+- DLib: обнаруживается как потенциальный конфликт, но автоматически не отключается.
+
+
+## Структура проекта
+```text
+glibus/
+├── lua/
+│   ├── autorun/
+│   │   └── libs_init.lua
+│   └── libs/
+│       ├── hook.lua
+│       ├── math.lua
+│       └── vector.lua
+└── README.md
+```
+
+## Credits
+Основные части проекта основаны на работе других разработчиков:
+
+- **Hook system:** [Srlion](https://github.com/Srlion) — исходная архитектура и семантика priority hooks. Текущая версия переработана под flat arrays, segmented dispatch и copy-on-write обновление списков.
+- **Math library:** [trojanhoes](https://github.com/trojanhoes) — основа математических helpers и быстрых приближений.
+
+Все последующие изменения, интеграция и оптимизации должны сохранять эти attribution notices.

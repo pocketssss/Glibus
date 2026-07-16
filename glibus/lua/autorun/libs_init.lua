@@ -7,6 +7,7 @@ local FILES = {
     "libs/hook.lua",
     "libs/math.lua",
     "libs/vector.lua",
+    "libs/color.lua",
 }
 
 local function log(fmt, ...)
